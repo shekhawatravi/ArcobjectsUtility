@@ -678,5 +678,184 @@ namespace ArcobjectsUtilityProject.Utility
             }
             return workspace;
         }
+        
+        /// <summary>
+        /// Get the <see cref="List<int>"/> of Object Ids from <see cref="IFeatureCursor"/>. it can be used to avoid the duplicate in the returned <see cref="List<int>"/>.
+        /// </summary>
+        /// <param name="pFeatCursor"><see cref="IFeatureCursor"/></param>
+        /// <param name="list"><see cref="List<int>"/></param>
+        /// <param name="isAvoidDuplicate"><see cref="Boolean"/></param>
+        /// <returns><see cref="List<int>"/></returns>
+        public List<int> GetOnlyObjectIdsAsList(IFeatureCursor pFeatCursor, List<int> list, Boolean isAvoidDuplicate)
+        {
+            if (list == null)
+                list = new List<int>();
+
+            if (pFeatCursor != null)
+            {
+                IFeature pFeature = pFeatCursor.NextFeature();
+                while (pFeature != null)
+                {
+                    if (isAvoidDuplicate)
+                    { // Dont's add duplicate in list
+                        if (!list.Contains(pFeature.OID))
+                            list.Add(pFeature.OID);
+                    }
+                    else // duplicates can be added
+                        list.Add(pFeature.OID);
+
+                    pFeature = pFeatCursor.NextFeature();
+                }
+            }
+            return list;
+        }
+        
+        /// <summary>
+        /// Get the <see cref="List<int>"/> of Object Ids from <see cref="IEnumIDs"/>.
+        /// </summary>
+        /// <param name="enumIds"></param>
+        /// <returns></returns>
+        public List<int> GetObjectIdsAsList(IEnumIDs enumIds)
+        {
+            List<int> outIds = new List<int>();
+
+            if(enumIds != null)
+            {
+                int idOne = enumIds.Next();
+                while(idOne != -1)
+                {
+                    outIds.Add(idOne);
+
+                    idOne = enumIds.Next();
+                }
+            }
+
+            return outIds;
+        }
+        
+        /// <summary>
+        /// Get the subtype field Name as <see cref="string"/>, if exists from a <see cref="IFeatureClass"/>.
+        /// </summary>
+        /// <param name="pFeatureClass"></param>
+        /// <returns><see cref="List<int>"/></returns>
+        public string GetSubTypeFieldName(IFeatureClass pFeatureClass)
+        {
+            string subTypeFieldName = "";
+            ISubtypes subtypes = (ISubtypes)pFeatureClass;
+            if (subtypes == null)
+            {
+                subTypeFieldName = "";
+            }
+            else
+            {
+                if (!subtypes.HasSubtype)// does the feature class have subtypes?
+                {
+                    subTypeFieldName = "";
+                }
+                else
+                {
+                    subTypeFieldName = subtypes.SubtypeFieldName;
+                }
+            }
+            return subTypeFieldName;
+        }
+        
+        /// <summary>
+        /// Get the linked Geometry of a Flowlines. It compares start and end points of each line segment, if they are equals, then they both line segments belongs to the same flowline. The Last argument.
+        /// </summary>
+        /// <param name="dic_orig_feats"> Dictionary of Original Feature Geometries. In this dictionary, key denotes ObjectId of the Feature, and Value denotes <see cref="IGeometry"/>. </param>
+        /// <param name="dic_base_geom">Base Geometry, one of the geometry to compare.</param>
+        /// <param name="first_avoid">List of ObjectIds to avoid to compare.</param>
+        /// <param name="first_rslt"> List of connected ObjectIds found. These all ObjectIds compose one Flowline. </param>
+        private void GetLinkedGeometry(IDictionary<int, IGeometry> dic_orig_feats, KeyValuePair<int, IGeometry> dic_base_geom, List<int> first_avoid, List<int> first_rslt)
+        {
+            // TODO: Commented Temporarily- AttributeConsistency rule needs to be modified to optimize the way of finding connected flowlines.
+            if (dic_orig_feats != null && dic_base_geom.Value != null && first_avoid.Count >= 0)
+            {
+                foreach (var item in dic_orig_feats)
+                {
+                    if (!first_avoid.Contains(item.Key) && item.Key != dic_base_geom.Key) // Avoid processing similar geometry
+                    {
+                        IPoint base_Frst_Pnt = ((IPolyline)dic_base_geom.Value).FromPoint;
+                        IPoint base_Last_Pnt = ((IPolyline)dic_base_geom.Value).ToPoint;
+
+                        IPoint compare_Frst_Pnt = ((IPolyline)item.Value).FromPoint;
+                        IPoint compare_Last_Pnt = ((IPolyline)item.Value).ToPoint;
+
+                        // Check if there is any intersection connection between these two point geometries
+                        IRelationalOperator pRelOper_Base_Frst_Pnt = base_Frst_Pnt as IRelationalOperator;
+                        IRelationalOperator pRelOper_Base_Last_Pnt = base_Last_Pnt as IRelationalOperator;
+                        if (pRelOper_Base_Last_Pnt.Crosses(compare_Frst_Pnt) || pRelOper_Base_Last_Pnt.Crosses(compare_Last_Pnt) ||
+                            pRelOper_Base_Frst_Pnt.Crosses(compare_Frst_Pnt) || pRelOper_Base_Frst_Pnt.Crosses(compare_Last_Pnt))
+                            continue;
+
+                        if (pRelOper_Base_Last_Pnt.Equals(compare_Frst_Pnt) || pRelOper_Base_Last_Pnt.Equals(compare_Last_Pnt) ||
+                           pRelOper_Base_Frst_Pnt.Equals(compare_Frst_Pnt) || pRelOper_Base_Frst_Pnt.Equals(compare_Last_Pnt))
+                        {
+                            if (!first_rslt.Contains(item.Key))
+                                first_rslt.Add(item.Key); // Adding found line segment's ObjectId(key) as part of a flowline.
+
+                            first_rslt.Add(dic_base_geom.Key); // Adding base geometry's line segment's ObjectId(key) as part of a flowline.
+
+                            first_avoid.Add(item.Key);
+                            GetLinkedGeometry(dic_orig_feats, new KeyValuePair<int, IGeometry>(item.Key, item.Value), first_avoid, first_rslt);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the List of Linked <see cref="IFeature"/>, which is of type <see cref="IPolyline"/>, from the <see cref="IFeatureCursor"/>
+        /// </summary>
+        /// <param name="dic_base_geom">Base Geometry, one of the geometry to compare.</param>
+        /// <returns><see cref="List<Dictionary<int, IFeature>>"/></returns>
+        public List<Dictionary<int, IFeature>> GetLinkedFeaturesFromFeatureCursor(IFeatureCursor pFCursor)
+        {
+            // TODO: Commented Temporarily- AttributeConsistency rule needs to be modified to optimize the way of finding connected flowlines.
+            List<Dictionary<int, IFeature>> _flowlinesFound = new List<Dictionary<int, IFeature>>(); // holds multiple flowlines
+
+            Dictionary<int, IFeature> dic_orig_IFeats = new Dictionary<int, IFeature>();
+            Dictionary<int, IGeometry> dic_orig_IGeoms = new Dictionary<int, IGeometry>();
+
+            if (pFCursor != null)
+            {
+                IFeature pFeat = pFCursor.NextFeature();
+                while (pFeat != null)
+                {
+                    dic_orig_IFeats.Add(pFeat.OID, pFeat);
+                    dic_orig_IGeoms.Add(pFeat.OID, pFeat.ShapeCopy);
+                    pFeat = pFCursor.NextFeature();
+                }
+            }
+
+            Log.Debug($"Finding related Segments to be merged. from '{dic_orig_IGeoms.Count}' flowline segments.");
+            if (dic_orig_IGeoms.Count > 0 && dic_orig_IFeats.Count > 0)
+            {
+                List<int> first_avoid = new List<int>();
+                foreach (int key in dic_orig_IGeoms.Keys)
+                {
+                    first_avoid.Add(key);
+                    List<int> first_rslt = new List<int>(); // holds ObjectIds(keys) of line segments which are part of a particular flowline.
+                    Dictionary<int, IFeature> first_rslt_IFeat = new Dictionary<int, IFeature>(); // holds ObjectIds(keys) and IFeature of line segments which are part of a particular flowline.
+                    IGeometry pGeomOut = null;
+                    dic_orig_IGeoms.TryGetValue(key, out pGeomOut);
+                    GetLinkedGeometry(dic_orig_IGeoms, new KeyValuePair<int, IGeometry>(key, pGeomOut), first_avoid, first_rslt);
+
+                    if (first_rslt.Count > 0)
+                    {
+                        _flowlinesFound.Add(first_rslt_IFeat);
+                        KeyValuePair<int, IFeature>[] temp = (from kv in dic_orig_IFeats where first_rslt.Contains(kv.Key) select kv).ToArray();
+                        foreach (var t in temp)
+                        {
+                            first_rslt_IFeat.Add(t.Key, t.Value);
+                        }
+                    }
+                }
+            }
+
+            Debug.WriteLine($"Total Flowlines found = {_flowlinesFound.Count} ");
+            return _flowlinesFound;
+        }
     }
 }
