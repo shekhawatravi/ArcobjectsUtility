@@ -170,3 +170,78 @@ def getDomainCode(featureLayer_url:str, subTypeCode:int, fieldName:str, domainVa
     return next((d['code'] for d in domainValues if str(d['name']).casefold() == domainValue.casefold()), None)
   else:
     return None
+
+# ==========[START] Version Management Related ....
+
+def get_version_guid(version_url:str, full_version_name:str, token:str=None)->str:
+  """
+    Returns the `GUID` of the provided version name from the versions' `URL`.
+
+    =====================    =====================================================================================
+    **Keys**                 **Description**
+    ---------------------    -------------------------------------------------------------------------------------
+    version_url:str          A REST end point 'URL' of ArcGIS Version e.g. `https://<host>/arcgis/rest/services/<serviceName>/VersionManagementServer/versions`.
+    ---------------------    -------------------------------------------------------------------------------------
+    full_version_name:str    name of the version for which `GUID` to be returned.
+    ---------------------    -------------------------------------------------------------------------------------
+    token:str                Valid JSON dictionary. Default value is `None`. (e.g. `{"f": "json", "token": "<TOKEN>"}`)
+    ---------------------    -------------------------------------------------------------------------------------
+    =====================    =====================================================================================
+
+    :returns:
+      A version `GUID` as `str`.
+
+  """
+
+  params = {
+    "f": "json",
+    "token": token,
+    }
+
+  response = evaluate_url(url= version_url, params= params)
+  versions = response.get('versions')
+  if versions is None:
+    raise Exception(f"Version '{full_version_name}' not found.")
+  
+  for version in versions:
+    if str(version['versionName']).casefold() == full_version_name.casefold(): # comparing by ignoring CASE.
+      return version['versionGuid'].strip("{}") # Remove curly braces and return without it.
+
+  raise Exception(f"Version '{full_version_name}' not found.")
+
+
+def purge_lock(version_purge_lock_url:str, full_version_name:str, token:str=None)->str:
+  """
+    Purge the provided version name. it removes the lock.
+
+    =====================       =====================================================================================
+    **Keys**                    **Description**
+    ---------------------       -------------------------------------------------------------------------------------
+    version_purge_lock_url:str  A REST end point 'URL' of ArcGIS Version e.g. `https://<host>/arcgis/rest/services/<serviceName>/VersionManagementServer/purgeLock`.
+    ---------------------       -------------------------------------------------------------------------------------
+    full_version_name:str       name of the version to be purged.
+    ---------------------       -------------------------------------------------------------------------------------
+    token:str                   Valid JSON dictionary. Default value is `None`. (e.g. `{"f": "json", "token": "<TOKEN>"}`)
+    ---------------------       -------------------------------------------------------------------------------------
+    =====================       =====================================================================================
+
+    :returns:
+      A True | False `bool`.
+
+  """
+
+  params = {
+    "f": "json",
+    "token": token,
+    "versionName": full_version_name
+    }
+
+  response = evaluate_url(url= version_purge_lock_url, params= params)
+  if not response.get('success'):
+    return True
+  else:
+    return False
+
+  raise Exception(f"Purge lock failed for '{full_version_name}'.")
+
+# ==========[END] Version Management Related
