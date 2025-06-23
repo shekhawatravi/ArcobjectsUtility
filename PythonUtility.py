@@ -83,7 +83,7 @@ def evaluate_url(url:str, params:dict[str, Any]=None):
     return None
     
 
-def getDomainValues(featureLayer_url:str, subTypeCode:int, fieldName:str)->list
+def getDomainValues(featureLayer_url:str, subTypeCode:int, fieldName:str)->list:
   """
     Returns a list of dictionaries containing domain code and their values for the specified field name, based on the subtypes defined in the provided feature layer URL.
 
@@ -136,7 +136,7 @@ def getDomainValues(featureLayer_url:str, subTypeCode:int, fieldName:str)->list
 
   return domainValues
 
-def getDomainCode(featureLayer_url:str, subTypeCode:int, fieldName:str, domainValue:str)->list
+def getDomainCode(featureLayer_url:str, subTypeCode:int, fieldName:str, domainValue:str)->list:
   """
     Returns a domain code as `int` for the specified domainValue of field name, based on the subtypes defined in the provided feature layer URL.
 
