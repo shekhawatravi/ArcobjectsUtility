@@ -3,7 +3,54 @@ import requests
 import json
 import urllib
 
----- END of import
+#---- END of import
+
+def query_arcgis_layer_rest_url(url:str, token:str, where_clause:str="1=1", outFields:str="*", returnGeometry:bool=False, resultoffset:int=0, batch_size:int=2000 )->[]:
+  """
+    Query `ArcGIS Feature Layer` using the REST request on the provided query `URL` and returns result as `list` of features.
+
+    =====================        =====================================================================================
+    **Keys**                     **Description**
+    ---------------------        -------------------------------------------------------------------------------------
+    url:str                      A REST end point of query 'URL' of :class: `~ArcGIS Feature Layer. e.g. `https://<host>/arcgis/rest/services/<serviceName>/FeatureServer/<layerId>/query`
+    ---------------------        -------------------------------------------------------------------------------------
+    token:str                    Valid JSON dictionary. Default value is `None`. (e.g. `{"f": "json", "token": "<TOKEN>"}`)
+    ---------------------        -------------------------------------------------------------------------------------
+    where_clause:str="1=1"       Where clause to restrict the resultset returned from the query. Defautl it will return `All` the records.
+    ---------------------        -------------------------------------------------------------------------------------
+    outFields:str="*"            Output feields to be returned in the result, field names shall be comma separated incase of multiple fields. Default it will return `All` the fields.
+    ---------------------        -------------------------------------------------------------------------------------
+    returnGeometry:bool=False    Wether to return geometry or not. Default `does not` return geometry.
+    ---------------------        -------------------------------------------------------------------------------------
+    resultoffset:int=0           This option can be used for fetching query results by skipping the specified number of records and starting from the next record (that is, `resultOffset` + 1). The default is `0`. This parameter only applies if `supportsPagination` is `true`. You can use this option to fetch records that are beyond `maxRecordCount`.
+    ---------------------        -------------------------------------------------------------------------------------
+    batch_size:int=2000          This option can be used for fetching query results up to the `resultRecordCount` specified. When `resultOffset` is specified but this parameter is not, the map service defaults it to `maxRecordCount`. The maximum value for this parameter is the value of the layer's `maxRecordCount` property. The minimum value entered for this parameter cannot be below 1. This parameter only applies if `supportsPagination` is `true`.
+    =====================        =====================================================================================
+
+    :returns:
+      `list` of features.
+
+  """
+  features = []
+  offset = resultoffset
+  while True:
+    params = {
+      "f": "json",
+      "token": token,
+      "where": where_clause,
+      "outFields": outFields,
+      "returnGeometry": returnGeometry,
+      resultoffset:offset,
+      "resultRecordCount": batch_size
+    }
+    response = evaluate_url(url=url, params=params)
+    batch = res.get("features",[])
+    if not batch:
+      break
+    features.extend(batch)
+    offset += batch_size
+  
+  return features
 
 def evaluate_url(url:str, params:dict[str, Any]=None):
   """
