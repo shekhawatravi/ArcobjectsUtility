@@ -133,6 +133,11 @@ def getDomainValues(featureLayer_url:str, subTypeCode:int, fieldName:str)->list:
           if 'codedValues' in domain_field:
             domainValues = domain_field.get('codedValues')
             break
+          if 'type' in domain_field and domain_field['type'] == 'inherited':
+            flds = [f for f in response['fields'] if f['name'] == fieldName]
+            if len(flds) > 0 and 'domain' in flds[0] and 'codedValues' in flds[0]['domain']:
+              domainValues = flds[0]['domain']['codedValues']
+              break
 
   return domainValues
 
@@ -167,7 +172,7 @@ def getDomainCode(featureLayer_url:str, subTypeCode:int, fieldName:str, domainVa
   
   domainValues = getDomainValues(featureLayer_url= featureLayer_url, subTypeCode= subTypeCode, fieldName= fieldName, domainValue= "Retired")
   if len(domainValues)>0:
-    return next((d['code'] for d in domainValues if str(d['name']).casefold() == domainValue.casefold()), None)
+    return next((d['code'] for d in domainValues if str(d['name']).lower() == domainValue.lower()), None)
   else:
     return None
 
@@ -204,7 +209,7 @@ def get_version_guid(version_url:str, full_version_name:str, token:str=None)->st
     raise Exception(f"Version '{full_version_name}' not found.")
   
   for version in versions:
-    if str(version['versionName']).casefold() == full_version_name.casefold(): # comparing by ignoring CASE.
+    if str(version['versionName']).lower() == full_version_name.lower(): # comparing by ignoring CASE.
       return version['versionGuid'].strip("{}") # Remove curly braces and return without it.
 
   raise Exception(f"Version '{full_version_name}' not found.")
