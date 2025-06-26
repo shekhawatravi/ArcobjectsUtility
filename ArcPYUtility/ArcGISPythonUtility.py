@@ -199,7 +199,6 @@ class esriHelper:
 
     return self._token
 
-
   def query_arcgis_layer_rest_url(self, url:str, token:str, where_clause:str="1=1", outFields:str="*", returnGeometry:bool=False, resultoffset:int=0, batch_size:int=2000 )->[]:
     """
       Query `ArcGIS Feature Layer` using the REST request on the provided query `URL` and returns result as `list` of features.
@@ -235,7 +234,7 @@ class esriHelper:
         "where": where_clause,
         "outFields": outFields,
         "returnGeometry": returnGeometry,
-        resultoffset:offset,
+        "resultoffset": offset,
         "resultRecordCount": batch_size
       }
       response = evaluate_url(url=url, params=params)
