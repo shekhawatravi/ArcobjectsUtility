@@ -1,0 +1,21 @@
+echo off
+
+REM "C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3\python.exe" "C:\temp\test.py"
+
+REM Get the ArcGIS Pro Python root from the registry
+for /f "tokens=3*" %%A in ('reg query "HKLM\SOFTWARE\ESRI\ArcGISPro" /v PythonCondaRoot 2^>nul') do (
+    set "PYTHON_ROOT=%%A %%B"
+)
+
+if not defined PYTHON_ROOT (
+    echo ArcGIS Pro Python path not found in registry.
+    exit /b 1
+)
+
+REM Construct full path to python.exe
+set "PYTHON_EXE=%PYTHON_ROOT%\envs\arcgispro-py3\python.exe"
+
+REM Run your script. Your script path is not generated dynamically, so it shall be hardcoded here.
+echo "%PYTHON_EXE%"
+"%PYTHON_EXE%" "C:\temp\test.py"
+pause
