@@ -1,5 +1,6 @@
-# Arcobjects Utilities
+# ArcobjectsUtilitiesProject
 Contains frequently used ESRI's Arcobjects Operations. 
+
 
 ## Installation
 This is the class library C#.NET project. you can include it as reference in your existing project and start using it.
@@ -23,3 +24,8 @@ This is the class library C#.NET project. you can include it as reference in you
 string conFile = "C://Geodatabase/SampleDatabase.gdb";
 IWorkspace pWS = ArcobjectsUtilityProject.Utility.GISUtility.Instance.GetWorkspace(string connectionFile)
 ```
+
+
+# ArcPyUtility
+Contains frequently used ESRI's ArcPy and ArcGIS API for Python Operations. 
+
