@@ -476,4 +476,27 @@ class esriHelper:
     if not response.get("success"):
         raise Exception(f"{action} failed: {response.json().get('error', {}).get('message')}")
 
+  def reconcile(self):
+      url = f"{VERSION_MGMT_URL}/versions/{version_guid}/reconcile"
+      params = {
+          "sessionId": SESSION_ID,
+          "abortIfConflicts": "false",
+          "conflictDetection": "ByObject",
+          "withPost": "false",
+          "token": get_token(),
+          "f": "json"
+      }
+
+      response = requests.post(url, data=params)
+      if not response.json().get("success"):
+          raise Exception(f"Reconcile failed: {response.json().get('error', {}).get('message')}")
+
+  def post(self):
+      url = f"{VERSION_MGMT_URL}/versions/{version_guid}/post"
+      params = {"sessionId": SESSION_ID, "token": get_token(), "f": "json"}
+      response = requests.post(url, data=params)
+      if not response.json().get("success"):
+          raise Exception(f"Post failed: {response.json().get('error', {}).get('message')}")
+
+
   # ==========[END] Version Management Related
